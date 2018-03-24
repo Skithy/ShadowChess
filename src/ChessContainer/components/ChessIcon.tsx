@@ -51,6 +51,7 @@ const getIcon = (piece: ChessPiece, set?: IChessIconSet) => {
 interface IChessIconProps {
 	tile: ITileState
 	teamInfo: Map<Team, ITeamInfo>
+	fogOfWarEnabled?: boolean
 }
 
 const ChessIcon: React.SFC<IChessIconProps> = props => {
@@ -58,7 +59,7 @@ const ChessIcon: React.SFC<IChessIconProps> = props => {
 	if (!chessPiece) {
 		return null
 	}
-	if (fogOfWar) {
+	if (props.fogOfWarEnabled && fogOfWar) {
 		return null
 	}
 	const teamInfo = props.teamInfo.get(team)

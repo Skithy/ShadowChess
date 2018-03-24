@@ -17,6 +17,7 @@ interface IChessContainerState {
 	selectedMoves: Coord[]
 	log: string[]
 	teamInfo: Map<Team, ITeamInfo>
+	gameHistory: IGameState[]
 }
 
 export default class ChessContainer extends React.PureComponent<IChessContainerProps, IChessContainerState> {
@@ -33,8 +34,13 @@ export default class ChessContainer extends React.PureComponent<IChessContainerP
 		teamInfo: new Map([
 			[Team.A, { colour: Colour.Black }],
 			[Team.B, { colour: Colour.White }],			
-		])
+		]),
+		gameHistory: []
 	} as IChessContainerState
+
+	componentDidMount() {
+		this.setState({ gameHistory: [this.state.gameState] })
+	}
 
 	componentDidUpdate(prevProps: IChessContainerProps, prevState: IChessContainerState) {
 		// New turn, update boardState and history
@@ -88,12 +94,13 @@ export default class ChessContainer extends React.PureComponent<IChessContainerP
 			ghostTile = {...tile}
 			updatedLog.push(`${selectedTile.team}'s ${tile.chessPiece} captured ${tile.team}'s ${tile.chessPiece}`)
 		}
-
+		
 		const gameState: IGameState = {
 			boardState: updateBoardState(selectedTile, tile, boardState),
 			playerTurn: playerTurn === Team.A ? Team.B : Team.A,
 		}
-		this.setState({ gameState, ghostTile, log: updatedLog })
+		const gameHistory = [...this.state.gameHistory, { ...gameState }]
+		this.setState({ gameState, ghostTile, log: updatedLog, gameHistory })
 	}
 
 	render() {
@@ -101,6 +108,7 @@ export default class ChessContainer extends React.PureComponent<IChessContainerP
 			<SUI.Container text style={{marginTop: '2em'}}>
 				<SUI.Header as="h1">Shadow Chess</SUI.Header>
 				<ChessGrid
+					fogOfWarEnabled
 					gameState={this.state.gameState}
 					ghostTile={this.state.ghostTile}
 					hoveredTile={this.state.hoveredTile}

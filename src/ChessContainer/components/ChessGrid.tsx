@@ -12,6 +12,7 @@ interface IChessGridProps {
 	hoveredMoves: Coord[]
 	selectedMoves: Coord[]
 	teamInfo: Map<Team, ITeamInfo>
+	fogOfWarEnabled?: boolean
 	changeHovered: (t: ITileState) => void
 	removeHovered: () => void
 	changeSelected: (t: ITileState) => void
@@ -25,6 +26,7 @@ const ChessGrid: React.SFC<IChessGridProps> = props => {
 		hoveredMoves,
 		selectedMoves,
 		teamInfo,
+		fogOfWarEnabled,
 		changeHovered,
 		removeHovered,
 		changeSelected,
@@ -48,7 +50,7 @@ const ChessGrid: React.SFC<IChessGridProps> = props => {
 					dark={(tile.coord.x + tile.coord.y) % 2 === 0}
 					fogOfWar={tile.fogOfWar}
 				>
-					<ChessIcon tile={tile} teamInfo={teamInfo} />
+					<ChessIcon fogOfWarEnabled={fogOfWarEnabled} tile={tile} teamInfo={teamInfo} />
 				</ChessTile>
 			)}
 		</div>
