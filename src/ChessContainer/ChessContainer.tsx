@@ -15,6 +15,7 @@ interface IChessContainerState {
 	selectedTile?: ITileState
 	hoveredMoves: Coord[]
 	selectedMoves: Coord[]
+	fogOfWarEnabled?: boolean
 	log: string[]
 	teamInfo: Map<Team, ITeamInfo>
 	gameHistory: IGameState[]
@@ -35,7 +36,8 @@ export default class ChessContainer extends React.PureComponent<IChessContainerP
 			[Team.A, { colour: Colour.Black }],
 			[Team.B, { colour: Colour.White }],			
 		]),
-		gameHistory: []
+		gameHistory: [],
+		fogOfWarEnabled: true,
 	} as IChessContainerState
 
 	componentDidMount() {
@@ -61,7 +63,14 @@ export default class ChessContainer extends React.PureComponent<IChessContainerP
 
 	changeHovered = (tile: ITileState): void => {
 		// Show available moves for pieces not in fog of war
-		const moves = !tile.fogOfWar ? findAvailableMoves(tile, this.state.gameState, true) : []
+		let moves: Coord[] = []
+		if (this.state.fogOfWarEnabled) {
+			if (!tile.fogOfWar) {
+				moves = findAvailableMoves(tile, this.state.gameState, this.state.fogOfWarEnabled)				
+			}
+		} else {
+			moves = findAvailableMoves(tile, this.state.gameState, this.state.fogOfWarEnabled)
+		}
 		this.setState({ hoveredTile: tile, hoveredMoves: moves })
 	}
 	removeHovered = (): void => this.setState({ hoveredTile: undefined })
@@ -108,7 +117,7 @@ export default class ChessContainer extends React.PureComponent<IChessContainerP
 			<SUI.Container text style={{marginTop: '2em'}}>
 				<SUI.Header as="h1">Shadow Chess</SUI.Header>
 				<ChessGrid
-					fogOfWarEnabled
+					fogOfWarEnabled={this.state.fogOfWarEnabled}
 					gameState={this.state.gameState}
 					ghostTile={this.state.ghostTile}
 					hoveredTile={this.state.hoveredTile}

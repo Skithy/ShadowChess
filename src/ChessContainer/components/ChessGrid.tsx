@@ -48,7 +48,7 @@ const ChessGrid: React.SFC<IChessGridProps> = props => {
 					hoveredMove={hoveredMoves.some(c => c.compare(tile.coord))}
 					selectedMove={selectedMoves.some(c => c.compare(tile.coord))}
 					dark={(tile.coord.x + tile.coord.y) % 2 === 0}
-					fogOfWar={tile.fogOfWar}
+					fogOfWar={props.fogOfWarEnabled && tile.fogOfWar}
 				>
 					<ChessIcon fogOfWarEnabled={fogOfWarEnabled} tile={tile} teamInfo={teamInfo} />
 				</ChessTile>
