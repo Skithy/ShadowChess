@@ -1,18 +1,22 @@
 import * as React from 'react'
 import * as SUI from 'semantic-ui-react'
 import ChessGrid from './components/ChessGrid'
-import { getFOWBoardState, updateFOW } from './gameState'
-import { Team } from './constants'
-import { IGameState, ITileState, Coord, } from './interfaces'
+import { getFOWBoardState, updateFOW, updateBoardState } from './gameState'
+import { Team, Colour } from './constants'
+import { IGameState, ITileState, Coord, ITeamInfo, } from './interfaces'
 import { findAvailableMoves } from './chessMoves'
 
 interface IChessContainerProps {}
 
 interface IChessContainerState {
 	gameState: IGameState
-	targetedTile: Coord | null
-	selectedTile: ITileState | null
-	availableMoves: Coord[]
+	ghostTile?: ITileState
+	hoveredTile?: ITileState
+	selectedTile?: ITileState
+	hoveredMoves: Coord[]
+	selectedMoves: Coord[]
+	log: string[]
+	teamInfo: Map<Team, ITeamInfo>
 }
 
 export default class ChessContainer extends React.PureComponent<IChessContainerProps, IChessContainerState> {
@@ -23,34 +27,74 @@ export default class ChessContainer extends React.PureComponent<IChessContainerP
 			boardState: getFOWBoardState(Team.A),
 			playerTurn: Team.A,
 		},
-		targetedTile: null,
-		selectedTile: null,
-		availableMoves: []
-	}
+		hoveredMoves: [],
+		selectedMoves: [],
+		log: [],
+		teamInfo: new Map([
+			[Team.A, { colour: Colour.Black }],
+			[Team.B, { colour: Colour.White }],			
+		])
+	} as IChessContainerState
 
 	componentDidUpdate(prevProps: IChessContainerProps, prevState: IChessContainerState) {
 		// New turn, update boardState and history
 		if (this.state.gameState.playerTurn !== prevState.gameState.playerTurn) {
 			const gameState = {
 				...this.state.gameState,
-				boardState: updateFOW(this.state.gameState)
+				boardState: updateFOW(this.state.gameState, this.state.ghostTile)
 			}
-			this.setState({ gameState })
+			this.setState({
+				gameState,
+				hoveredTile: undefined,
+				selectedTile: undefined,
+				hoveredMoves: [],
+				selectedMoves: [],
+			})
 		}
 	}
 
-	changeTargeted = (c: Coord): void => this.setState({ targetedTile: c })
-	removeTargeted = (): void => this.setState({ targetedTile: null })
+	changeHovered = (tile: ITileState): void => {
+		// Show available moves for pieces not in fog of war
+		const moves = !tile.fogOfWar ? findAvailableMoves(tile, this.state.gameState, true) : []
+		this.setState({ hoveredTile: tile, hoveredMoves: moves })
+	}
+	removeHovered = (): void => this.setState({ hoveredTile: undefined })
 
 	changeSelected = (tile: ITileState): void => {
-		if (tile.fogOfWar) {
-			this.setState({ selectedTile: null, availableMoves: [] })			
+		const { selectedTile, selectedMoves, gameState: { playerTurn } } = this.state
+		if (selectedTile && (selectedMoves as Coord[]).some(t => t.compare(tile.coord))) {
+			// Move to selected tile
+			this.handleMove(tile)
+		} else if (tile.team !== playerTurn || tile === selectedTile) {
+			// Cancel selected tile
+			this.setState({ selectedTile: undefined, selectedMoves: [] })			
 		} else {
-			const availableMoves = findAvailableMoves(tile, this.state.gameState)
-			this.setState({ selectedTile: tile, availableMoves })
+			// Get available moves for tile
+			const moves = findAvailableMoves(tile, this.state.gameState)
+			this.setState({ selectedTile: tile, selectedMoves: moves })
 		}
 	}
-	removeSelected = (): void => this.setState({ selectedTile: null, availableMoves: [] })
+	removeSelected = (): void => this.setState({ selectedTile: undefined, selectedMoves: [] })
+
+	handleMove = (tile: ITileState): void => {
+		const { selectedTile, log, gameState: { boardState, playerTurn } } = this.state
+		if (!selectedTile) {
+			return
+		}
+
+		let ghostTile: ITileState | undefined = undefined
+		const updatedLog = [...log]
+		if (tile.team && tile.team !== playerTurn) {
+			ghostTile = {...tile}
+			updatedLog.push(`${selectedTile.team}'s ${tile.chessPiece} captured ${tile.team}'s ${tile.chessPiece}`)
+		}
+
+		const gameState: IGameState = {
+			boardState: updateBoardState(selectedTile, tile, boardState),
+			playerTurn: playerTurn === Team.A ? Team.B : Team.A,
+		}
+		this.setState({ gameState, ghostTile, log: updatedLog })
+	}
 
 	render() {
 		return (
@@ -58,17 +102,22 @@ export default class ChessContainer extends React.PureComponent<IChessContainerP
 				<SUI.Header as="h1">Shadow Chess</SUI.Header>
 				<ChessGrid
 					gameState={this.state.gameState}
-					targetedTile={this.state.targetedTile}
+					ghostTile={this.state.ghostTile}
+					hoveredTile={this.state.hoveredTile}
 					selectedTile={this.state.selectedTile}
-					availableMoves={this.state.availableMoves}
-					changeTargeted={this.changeTargeted}
-					removeTargeted={this.removeTargeted}
+					hoveredMoves={this.state.hoveredMoves}
+					selectedMoves={this.state.selectedMoves}
+					teamInfo={this.state.teamInfo}
+					changeHovered={this.changeHovered}
+					removeHovered={this.removeHovered}
 					changeSelected={this.changeSelected}
-					removeSelected={this.removeSelected}
 				/>
 				<SUI.Header as="h3">Turn: {this.state.gameState.playerTurn}</SUI.Header>
+				<SUI.Header as="h3">Log: </SUI.Header>
+				{this.state.log.map((l, i) =>
+					<SUI.Header as="h4" key={i}>{l}</SUI.Header>
+				)}
 			</SUI.Container>
 		)
 	}
 }
-// <ChessPieces gameState={this.state.gameState} />

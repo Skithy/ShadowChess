@@ -1,4 +1,4 @@
-import { ChessPiece, Team } from './constants'
+import { ChessPiece, Team, Colour } from './constants'
 
 export class Coord {
 	readonly x: number
@@ -28,4 +28,17 @@ export type BoardState = ITileState[][]
 export interface IGameState {
 	boardState: BoardState
 	playerTurn: Team
+}
+
+export interface IChessIconSet {
+	pawn: any // tslint:disable-line:no-any
+	bishop: any // tslint:disable-line:no-any
+	knight: any // tslint:disable-line:no-any
+	rook: any // tslint:disable-line:no-any
+	queen: any // tslint:disable-line:no-any
+	king: any // tslint:disable-line:no-any
+}
+
+export interface ITeamInfo {
+	colour: Colour
 }

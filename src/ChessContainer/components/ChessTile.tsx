@@ -1,19 +1,27 @@
 import styled from 'styled-components'
 
 interface IChessTileProps {
+	ghost?: boolean
+	hovered?: boolean
+	selected?: boolean
+	hoveredMove?: boolean
+	selectedMove?: boolean
 	fogOfWar?: boolean
 	dark?: boolean
-	hover?: boolean
-	availableMove?: boolean
-	selected?: boolean
 }
 
 const getTileHover = (props: IChessTileProps): string => {
-	const borderColour = props.hover
-		? 'gold'
-		: props.availableMove || props.selected
-			? 'lightblue'
-			: ''
+	const borderColour = props.selected
+		? 'magenta'
+		: props.hovered
+			? 'gold'
+			: props.ghost
+				? 'black'
+				: props.hoveredMove
+					? 'lightblue'
+					: props.selectedMove
+						? 'red'
+						: 'transparent'
 	
 	return borderColour ? `border: 4px solid ${borderColour};` : ''
 }
@@ -29,8 +37,8 @@ const getTileColour = (props: IChessTileProps): string => {
 const ChessTile = styled.div`
 	${getTileColour}
 	${getTileHover}
-	width: 4em;
-	height: 4em;
+	width: 5em;
+	height: 5em;
 	display: flex;
 	align-items: center;
 	justify-content: center;
