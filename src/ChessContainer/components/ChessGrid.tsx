@@ -5,8 +5,8 @@ import { Team } from '../constants'
 import { IGameState, ITileState, Coord, ITeamInfo } from '../interfaces'
 
 interface IChessGridProps {
+	width: number
 	gameState: IGameState
-	ghostTile?: ITileState
 	hoveredTile?: ITileState
 	selectedTile?: ITileState
 	hoveredMoves: Coord[]
@@ -20,7 +20,7 @@ interface IChessGridProps {
 
 const ChessGrid: React.SFC<IChessGridProps> = props => {
 	const {
-		ghostTile,
+		width,
 		hoveredTile,
 		selectedTile,
 		hoveredMoves,
@@ -30,7 +30,7 @@ const ChessGrid: React.SFC<IChessGridProps> = props => {
 		changeHovered,
 		removeHovered,
 		changeSelected,
-		gameState: { boardState },
+		gameState: { boardState, ghostTile, },
 	} = props
 
 	const chessGrid = boardState.map((row, i) => (
@@ -47,7 +47,7 @@ const ChessGrid: React.SFC<IChessGridProps> = props => {
 					selected={!!selectedTile && selectedTile.coord.compare(tile.coord)}
 					hoveredMove={hoveredMoves.some(c => c.compare(tile.coord))}
 					selectedMove={selectedMoves.some(c => c.compare(tile.coord))}
-					dark={(tile.coord.x + tile.coord.y) % 2 === 0}
+					dark={(tile.coord.x + tile.coord.y) % 2 === 1}
 					fogOfWar={props.fogOfWarEnabled && tile.fogOfWar}
 				>
 					<ChessIcon fogOfWarEnabled={fogOfWarEnabled} tile={tile} teamInfo={teamInfo} />
@@ -57,7 +57,7 @@ const ChessGrid: React.SFC<IChessGridProps> = props => {
 	))
 
 	return (
-		<div>
+		<div style={{ width, height: width, margin: 'auto' }}>
 			{chessGrid}
 		</div>
 	)

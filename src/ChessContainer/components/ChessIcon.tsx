@@ -13,9 +13,16 @@ import yellow from './chessIcons/yellow'
 import { ChessPiece, Colour, Team } from '../constants'
 import { ITileState, IChessIconSet, ITeamInfo } from '../interfaces'
 
+const getIconSize = (props: IFilledImageProps) => props.larger ? '90%' : '80%'
+
+interface IFilledImageProps {
+	larger?: boolean
+}
+
 const FilledImage = styled.img`
-	height: 80%;
-	width: 80%;
+	height: ${getIconSize};
+	width: ${getIconSize};
+	user-select: none;
 `
 
 const colourMap: Map<Colour, IChessIconSet> = new Map([
@@ -55,15 +62,15 @@ interface IChessIconProps {
 }
 
 const ChessIcon: React.SFC<IChessIconProps> = props => {
-	const { chessPiece, fogOfWar, team } = props.tile
+	const { teamInfo, tile: { chessPiece, fogOfWar, team, } } = props
 	if (!chessPiece) {
 		return null
 	}
 	if (props.fogOfWarEnabled && fogOfWar) {
 		return null
 	}
-	const teamInfo = props.teamInfo.get(team)
-	const icon = teamInfo ? getIcon(props.tile.chessPiece, colourMap.get(teamInfo.colour)) : ''
-	return <FilledImage src={icon} />
+	const teamDetails = teamInfo.get(team)
+	const icon = teamDetails ? getIcon(chessPiece, colourMap.get(teamDetails.colour)) : ''
+	return <FilledImage src={icon} larger={chessPiece === ChessPiece.Queen || chessPiece === ChessPiece.King}/>
 }
 export default ChessIcon

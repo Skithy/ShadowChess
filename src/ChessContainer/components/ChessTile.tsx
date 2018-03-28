@@ -15,12 +15,12 @@ const getTileHover = (props: IChessTileProps): string => {
 		? 'magenta'
 		: props.hovered
 			? 'gold'
-			: props.ghost
-				? 'black'
-				: props.hoveredMove
-					? 'lightblue'
-					: props.selectedMove
-						? 'red'
+			: props.hoveredMove
+				? 'lightblue'
+				: props.selectedMove
+					? 'red'
+					: props.ghost
+						? 'black'
 						: 'transparent'
 	
 	return borderColour ? `border: 4px solid ${borderColour};` : ''
@@ -37,10 +37,14 @@ const getTileColour = (props: IChessTileProps): string => {
 const ChessTile = styled.div`
 	${getTileColour}
 	${getTileHover}
-	width: 5em;
-	height: 5em;
+	flex: 0 0 12.5%;
 	display: flex;
 	align-items: center;
 	justify-content: center;
+	:after {
+		content: '';
+		display: block;
+		padding-top: 100%;
+	}
 `
 export default ChessTile

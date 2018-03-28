@@ -28,6 +28,8 @@ export type BoardState = ITileState[][]
 export interface IGameState {
 	boardState: BoardState
 	playerTurn: Team
+	inCheck: boolean,
+	ghostTile?: ITileState
 }
 
 export interface IChessIconSet {

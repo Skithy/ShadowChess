@@ -1,7 +1,7 @@
 import * as React from 'react'
 import * as SUI from 'semantic-ui-react'
 import ChessGrid from './components/ChessGrid'
-import { getFOWBoardState, updateFOW, updateBoardState } from './gameState'
+import { getFOWBoardState, updateFOW, updateBoardState, checkChecked } from './gameState'
 import { Team, Colour } from './constants'
 import { IGameState, ITileState, Coord, ITeamInfo, } from './interfaces'
 import { findAvailableMoves } from './chessMoves'
@@ -10,7 +10,6 @@ interface IChessContainerProps {}
 
 interface IChessContainerState {
 	gameState: IGameState
-	ghostTile?: ITileState
 	hoveredTile?: ITileState
 	selectedTile?: ITileState
 	hoveredMoves: Coord[]
@@ -28,13 +27,14 @@ export default class ChessContainer extends React.PureComponent<IChessContainerP
 		gameState: {
 			boardState: getFOWBoardState(Team.A),
 			playerTurn: Team.A,
+			inCheck: false,
 		},
 		hoveredMoves: [],
 		selectedMoves: [],
 		log: [],
 		teamInfo: new Map([
-			[Team.A, { colour: Colour.Black }],
-			[Team.B, { colour: Colour.White }],			
+			[Team.A, { colour: Colour.Purple }],
+			[Team.B, { colour: Colour.Green }],			
 		]),
 		gameHistory: [],
 		fogOfWarEnabled: true,
@@ -45,38 +45,42 @@ export default class ChessContainer extends React.PureComponent<IChessContainerP
 	}
 
 	componentDidUpdate(prevProps: IChessContainerProps, prevState: IChessContainerState) {
+		const { gameState, gameState: { boardState, playerTurn, ghostTile, }, gameHistory } = this.state
 		// New turn, update boardState and history
-		if (this.state.gameState.playerTurn !== prevState.gameState.playerTurn) {
-			const gameState = {
-				...this.state.gameState,
-				boardState: updateFOW(this.state.gameState, this.state.ghostTile)
+		if (playerTurn !== prevState.gameState.playerTurn) {
+			const newGameState: IGameState = {
+				...gameState,
+				boardState: updateFOW(gameState, ghostTile),
+				inCheck: checkChecked(boardState, playerTurn),
 			}
 			this.setState({
-				gameState,
+				gameState: newGameState,
 				hoveredTile: undefined,
 				selectedTile: undefined,
 				hoveredMoves: [],
 				selectedMoves: [],
+				gameHistory: [...gameHistory, {...newGameState}]
 			})
 		}
 	}
 
 	changeHovered = (tile: ITileState): void => {
+		const { fogOfWarEnabled, gameState: { boardState } } = this.state
 		// Show available moves for pieces not in fog of war
 		let moves: Coord[] = []
 		if (this.state.fogOfWarEnabled) {
 			if (!tile.fogOfWar) {
-				moves = findAvailableMoves(tile, this.state.gameState, this.state.fogOfWarEnabled)				
+				moves = findAvailableMoves(tile, boardState, fogOfWarEnabled)				
 			}
 		} else {
-			moves = findAvailableMoves(tile, this.state.gameState, this.state.fogOfWarEnabled)
+			moves = findAvailableMoves(tile, boardState, fogOfWarEnabled)
 		}
 		this.setState({ hoveredTile: tile, hoveredMoves: moves })
 	}
-	removeHovered = (): void => this.setState({ hoveredTile: undefined })
+	removeHovered = (): void => this.setState({ hoveredTile: undefined, hoveredMoves: [] })
 
 	changeSelected = (tile: ITileState): void => {
-		const { selectedTile, selectedMoves, gameState: { playerTurn } } = this.state
+		const { selectedTile, selectedMoves, gameState: { boardState, playerTurn } } = this.state
 		if (selectedTile && (selectedMoves as Coord[]).some(t => t.compare(tile.coord))) {
 			// Move to selected tile
 			this.handleMove(tile)
@@ -85,11 +89,13 @@ export default class ChessContainer extends React.PureComponent<IChessContainerP
 			this.setState({ selectedTile: undefined, selectedMoves: [] })			
 		} else {
 			// Get available moves for tile
-			const moves = findAvailableMoves(tile, this.state.gameState)
+			const moves = findAvailableMoves(tile, boardState)
 			this.setState({ selectedTile: tile, selectedMoves: moves })
 		}
 	}
 	removeSelected = (): void => this.setState({ selectedTile: undefined, selectedMoves: [] })
+
+	toggleFogOfWar = (): void => this.setState({ fogOfWarEnabled: !this.state.fogOfWarEnabled })
 
 	handleMove = (tile: ITileState): void => {
 		const { selectedTile, log, gameState: { boardState, playerTurn } } = this.state
@@ -101,39 +107,50 @@ export default class ChessContainer extends React.PureComponent<IChessContainerP
 		const updatedLog = [...log]
 		if (tile.team && tile.team !== playerTurn) {
 			ghostTile = {...tile}
-			updatedLog.push(`${selectedTile.team}'s ${tile.chessPiece} captured ${tile.team}'s ${tile.chessPiece}`)
+			updatedLog.push(`${selectedTile.team}'s ${selectedTile.chessPiece} captured ${tile.team}'s ${tile.chessPiece}`)
 		}
 		
 		const gameState: IGameState = {
 			boardState: updateBoardState(selectedTile, tile, boardState),
 			playerTurn: playerTurn === Team.A ? Team.B : Team.A,
+			inCheck: false,
+			ghostTile
 		}
-		const gameHistory = [...this.state.gameHistory, { ...gameState }]
-		this.setState({ gameState, ghostTile, log: updatedLog, gameHistory })
+		this.setState({ gameState, log: updatedLog })
 	}
 
 	render() {
 		return (
-			<SUI.Container text style={{marginTop: '2em'}}>
-				<SUI.Header as="h1">Shadow Chess</SUI.Header>
-				<ChessGrid
-					fogOfWarEnabled={this.state.fogOfWarEnabled}
-					gameState={this.state.gameState}
-					ghostTile={this.state.ghostTile}
-					hoveredTile={this.state.hoveredTile}
-					selectedTile={this.state.selectedTile}
-					hoveredMoves={this.state.hoveredMoves}
-					selectedMoves={this.state.selectedMoves}
-					teamInfo={this.state.teamInfo}
-					changeHovered={this.changeHovered}
-					removeHovered={this.removeHovered}
-					changeSelected={this.changeSelected}
-				/>
-				<SUI.Header as="h3">Turn: {this.state.gameState.playerTurn}</SUI.Header>
-				<SUI.Header as="h3">Log: </SUI.Header>
-				{this.state.log.map((l, i) =>
-					<SUI.Header as="h4" key={i}>{l}</SUI.Header>
-				)}
+			<SUI.Container style={{marginTop: '2em'}}>
+				<SUI.Grid columns={2} divided doubling container>
+					<SUI.Grid.Column width={12}>
+						<SUI.Header as="h1" style={{ textAlign: 'center' }}>Shadow Chess</SUI.Header>
+						<ChessGrid
+							width={600}
+							fogOfWarEnabled={this.state.fogOfWarEnabled}
+							gameState={this.state.gameState}
+							hoveredTile={this.state.hoveredTile}
+							selectedTile={this.state.selectedTile}
+							hoveredMoves={this.state.hoveredMoves}
+							selectedMoves={this.state.selectedMoves}
+							teamInfo={this.state.teamInfo}
+							changeHovered={this.changeHovered}
+							removeHovered={this.removeHovered}
+							changeSelected={this.changeSelected}
+						/>
+					</SUI.Grid.Column>
+					<SUI.Grid.Column width={4}>
+						<SUI.Button onClick={this.toggleFogOfWar}>Toggle Fog of War</SUI.Button>
+						<SUI.Header as="h3">Turn: {this.state.gameState.playerTurn}</SUI.Header>
+						<SUI.Header as="h3">Log: </SUI.Header>
+						{this.state.gameState.inCheck &&
+							<SUI.Header as="h3">Checked!</SUI.Header>
+						}
+						{this.state.log.map((l, i) =>
+							<SUI.Header as="h4" key={i}>{l}</SUI.Header>
+						)}
+					</SUI.Grid.Column>
+				</SUI.Grid>
 			</SUI.Container>
 		)
 	}

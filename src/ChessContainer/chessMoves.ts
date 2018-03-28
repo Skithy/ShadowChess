@@ -1,7 +1,7 @@
-import { ITileState, IGameState, Coord } from './interfaces'
+import { ITileState, BoardState, Coord } from './interfaces'
 import { ChessPiece, Team } from './constants'
 
-const isValid = (x: number) => x >= 0 && x < 8
+export const isValid = (x: number) => x >= 0 && x < 8
 
 const addValidMove = (moves: Coord[], tile: ITileState, newTile: ITileState, fogOfWar?: boolean): boolean => {
 	if (fogOfWar && newTile.fogOfWar) {
@@ -20,12 +20,11 @@ const addValidMove = (moves: Coord[], tile: ITileState, newTile: ITileState, fog
 	return true
 }
 
-const findPawnMoves = (tile: ITileState, gameState: IGameState, fogOfWar?: boolean): Coord[] => {
+const findPawnMoves = (tile: ITileState, boardState: BoardState, fogOfWar?: boolean): Coord[] => {
 	const moves: Coord[] = []
-	const { boardState } = gameState
 	const [x, y] = tile.coord.getCoords()
 	// Todo: Enpasse
-	if (tile.team === Team.A) {
+	if (tile.team === Team.B) {
 		// Single-step
 		const ssTile = boardState[y + 1][x]
 		if (!ssTile.chessPiece || (fogOfWar && ssTile.fogOfWar)) {
@@ -38,10 +37,10 @@ const findPawnMoves = (tile: ITileState, gameState: IGameState, fogOfWar?: boole
 		}
 
 		// Diagonal capture
-		if (isValid(x - 1) && boardState[y + 1][x - 1].team === Team.B) {
+		if (isValid(x - 1) && boardState[y + 1][x - 1].team === Team.A) {
 			moves.push(new Coord(x - 1, y + 1))
 		}
-		if (isValid(x + 1) && boardState[y + 1][x + 1].team === Team.B) {
+		if (isValid(x + 1) && boardState[y + 1][x + 1].team === Team.A) {
 			moves.push(new Coord(x + 1, y + 1))
 		}
 	} else {
@@ -57,10 +56,10 @@ const findPawnMoves = (tile: ITileState, gameState: IGameState, fogOfWar?: boole
 		}
 
 		// Diagonal capture
-		if (isValid(x - 1) && boardState[y - 1][x - 1].team === Team.A) {
+		if (isValid(x - 1) && boardState[y - 1][x - 1].team === Team.B) {
 			moves.push(new Coord(x - 1, y - 1))
 		}
-		if (isValid(x + 1) && boardState[y - 1][x + 1].team === Team.A) {
+		if (isValid(x + 1) && boardState[y - 1][x + 1].team === Team.B) {
 			moves.push(new Coord(x + 1, y - 1))
 		}
 	}
@@ -68,9 +67,8 @@ const findPawnMoves = (tile: ITileState, gameState: IGameState, fogOfWar?: boole
 	return moves
 }
 
-const findBishopMoves = (tile: ITileState, gameState: IGameState, fogOfWar?: boolean): Coord[] => {
+const findBishopMoves = (tile: ITileState, boardState: BoardState, fogOfWar?: boolean): Coord[] => {
 	const moves: Coord[] = []
-	const { boardState } = gameState
 	const [x, y] = tile.coord.getCoords()
 
 	let tl = true
@@ -124,9 +122,8 @@ const findBishopMoves = (tile: ITileState, gameState: IGameState, fogOfWar?: boo
 	return moves
 }
 
-const findKnightMoves = (tile: ITileState, gameState: IGameState, fogOfWar?: boolean): Coord[] => {
+const findKnightMoves = (tile: ITileState, boardState: BoardState, fogOfWar?: boolean): Coord[] => {
 	const moves: Coord[] = []
-	const { boardState } = gameState
 	const [x, y] = tile.coord.getCoords()
 
 	const xl1 = x - 1
@@ -152,9 +149,8 @@ const findKnightMoves = (tile: ITileState, gameState: IGameState, fogOfWar?: boo
 	return moves
 }
 
-const findRookMoves = (tile: ITileState, gameState: IGameState, fogOfWar?: boolean): Coord[] => {
+const findRookMoves = (tile: ITileState, boardState: BoardState, fogOfWar?: boolean): Coord[] => {
 	const moves: Coord[] = []
-	const { boardState } = gameState
 	const [x, y] = tile.coord.getCoords()
 
 	let top = true
@@ -190,17 +186,16 @@ const findRookMoves = (tile: ITileState, gameState: IGameState, fogOfWar?: boole
 	return moves
 }
 
-const findQueenMoves = (tile: ITileState, gameState: IGameState, fogOfWar?: boolean): Coord[] => {
+const findQueenMoves = (tile: ITileState, boardState: BoardState, fogOfWar?: boolean): Coord[] => {
 	const moves: Coord[] = [
-		...findBishopMoves(tile, gameState, fogOfWar),
-		...findRookMoves(tile, gameState, fogOfWar),
+		...findBishopMoves(tile, boardState, fogOfWar),
+		...findRookMoves(tile, boardState, fogOfWar),
 	]
 	return moves
 }
 
-const findKingMoves = (tile: ITileState, gameState: IGameState, fogOfWar?: boolean): Coord[] => {
+const findKingMoves = (tile: ITileState, boardState: BoardState, fogOfWar?: boolean): Coord[] => {
 	const moves: Coord[] = []
-	const { boardState } = gameState
 	const [x, y] = tile.coord.getCoords()
 
 	// Todo: castle
@@ -223,22 +218,22 @@ const findKingMoves = (tile: ITileState, gameState: IGameState, fogOfWar?: boole
 	return moves
 }
 
-export const findAvailableMoves = (tile: ITileState, gameState: IGameState, fogOfWar?: boolean): Coord[] => {
+export const findAvailableMoves = (tile: ITileState, boardState: BoardState, fogOfWar?: boolean): Coord[] => {
 	switch (tile.chessPiece) {
 		case ChessPiece.Empty:
 			return []
 		case ChessPiece.Pawn:
-			return findPawnMoves(tile, gameState, fogOfWar)
+			return findPawnMoves(tile, boardState, fogOfWar)
 		case ChessPiece.Bishop:
-			return findBishopMoves(tile, gameState, fogOfWar)
+			return findBishopMoves(tile, boardState, fogOfWar)
 		case ChessPiece.Knight:
-			return findKnightMoves(tile, gameState, fogOfWar)
+			return findKnightMoves(tile, boardState, fogOfWar)
 		case ChessPiece.Rook:
-			return findRookMoves(tile, gameState, fogOfWar)
+			return findRookMoves(tile, boardState, fogOfWar)
 		case ChessPiece.Queen:
-			return findQueenMoves(tile, gameState, fogOfWar)
+			return findQueenMoves(tile, boardState, fogOfWar)
 		case ChessPiece.King:
-			return findKingMoves(tile, gameState, fogOfWar)
+			return findKingMoves(tile, boardState, fogOfWar)
 		default:
 			return []
 	}
