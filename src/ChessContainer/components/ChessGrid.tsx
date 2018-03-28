@@ -5,7 +5,6 @@ import { Team } from '../constants'
 import { IGameState, ITileState, Coord, ITeamInfo } from '../interfaces'
 
 interface IChessGridProps {
-	width: number
 	gameState: IGameState
 	hoveredTile?: ITileState
 	selectedTile?: ITileState
@@ -20,7 +19,6 @@ interface IChessGridProps {
 
 const ChessGrid: React.SFC<IChessGridProps> = props => {
 	const {
-		width,
 		hoveredTile,
 		selectedTile,
 		hoveredMoves,
@@ -56,10 +54,6 @@ const ChessGrid: React.SFC<IChessGridProps> = props => {
 		</div>
 	))
 
-	return (
-		<div style={{ width, height: width, margin: 'auto' }}>
-			{chessGrid}
-		</div>
-	)
+	return <>{chessGrid}</>
 }
 export default ChessGrid

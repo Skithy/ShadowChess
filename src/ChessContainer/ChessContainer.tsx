@@ -1,14 +1,16 @@
 import * as React from 'react'
 import * as SUI from 'semantic-ui-react'
 import ChessGrid from './components/ChessGrid'
+import AwaitPlayerScreen from './components/AwaitPlayerScreen'
 import { getFOWBoardState, updateFOW, updateBoardState, checkChecked } from './gameState'
-import { Team, Colour } from './constants'
+import { Team, Colour, GameStatus } from './constants'
 import { IGameState, ITileState, Coord, ITeamInfo, } from './interfaces'
 import { findAvailableMoves } from './chessMoves'
 
 interface IChessContainerProps {}
 
 interface IChessContainerState {
+	gameStatus: GameStatus
 	gameState: IGameState
 	hoveredTile?: ITileState
 	selectedTile?: ITileState
@@ -24,6 +26,7 @@ export default class ChessContainer extends React.PureComponent<IChessContainerP
 	// Store stuff that changes turn by turn in boardState
 	// Store stuff that changes during turn in state
 	state = {
+		gameStatus: GameStatus.AwaitP1,
 		gameState: {
 			boardState: getFOWBoardState(Team.A),
 			playerTurn: Team.A,
@@ -98,16 +101,16 @@ export default class ChessContainer extends React.PureComponent<IChessContainerP
 	toggleFogOfWar = (): void => this.setState({ fogOfWarEnabled: !this.state.fogOfWarEnabled })
 
 	handleMove = (tile: ITileState): void => {
-		const { selectedTile, log, gameState: { boardState, playerTurn } } = this.state
+		const { selectedTile, gameState: { boardState, playerTurn } } = this.state
+		// no tile selected??
 		if (!selectedTile) {
 			return
 		}
 
 		let ghostTile: ITileState | undefined = undefined
-		const updatedLog = [...log]
+		// Capture a piece
 		if (tile.team && tile.team !== playerTurn) {
 			ghostTile = {...tile}
-			updatedLog.push(`${selectedTile.team}'s ${selectedTile.chessPiece} captured ${tile.team}'s ${tile.chessPiece}`)
 		}
 		
 		const gameState: IGameState = {
@@ -116,8 +119,37 @@ export default class ChessContainer extends React.PureComponent<IChessContainerP
 			inCheck: false,
 			ghostTile
 		}
-		this.setState({ gameState, log: updatedLog })
+		const gameStatus = gameState.playerTurn === Team.A ? GameStatus.AwaitP1 : GameStatus.AwaitP2
+		this.setState({gameState, gameStatus })
 	}
+
+	displayScreen = (): JSX.Element | null => {
+		switch (this.state.gameStatus) {
+			case GameStatus.Game:
+				return (
+					<ChessGrid
+						fogOfWarEnabled={this.state.fogOfWarEnabled}
+						gameState={this.state.gameState}
+						hoveredTile={this.state.hoveredTile}
+						selectedTile={this.state.selectedTile}
+						hoveredMoves={this.state.hoveredMoves}
+						selectedMoves={this.state.selectedMoves}
+						teamInfo={this.state.teamInfo}
+						changeHovered={this.changeHovered}
+						removeHovered={this.removeHovered}
+						changeSelected={this.changeSelected}
+					/>
+				)
+			case GameStatus.AwaitP1:
+				return <AwaitPlayerScreen onResume={this.resumeGame} player={Team.A}/>
+			case GameStatus.AwaitP2:
+				return <AwaitPlayerScreen onResume={this.resumeGame} player={Team.B} />
+			default:
+				return null
+		}
+	}
+
+	resumeGame = (): void => this.setState({ gameStatus: GameStatus.Game })
 
 	render() {
 		return (
@@ -125,30 +157,16 @@ export default class ChessContainer extends React.PureComponent<IChessContainerP
 				<SUI.Grid columns={2} divided doubling container>
 					<SUI.Grid.Column width={12}>
 						<SUI.Header as="h1" style={{ textAlign: 'center' }}>Shadow Chess</SUI.Header>
-						<ChessGrid
-							width={600}
-							fogOfWarEnabled={this.state.fogOfWarEnabled}
-							gameState={this.state.gameState}
-							hoveredTile={this.state.hoveredTile}
-							selectedTile={this.state.selectedTile}
-							hoveredMoves={this.state.hoveredMoves}
-							selectedMoves={this.state.selectedMoves}
-							teamInfo={this.state.teamInfo}
-							changeHovered={this.changeHovered}
-							removeHovered={this.removeHovered}
-							changeSelected={this.changeSelected}
-						/>
+						<div style={{ width: 600, margin: 'auto' }}>
+							{this.displayScreen()}
+						</div>
 					</SUI.Grid.Column>
 					<SUI.Grid.Column width={4}>
 						<SUI.Button onClick={this.toggleFogOfWar}>Toggle Fog of War</SUI.Button>
 						<SUI.Header as="h3">Turn: {this.state.gameState.playerTurn}</SUI.Header>
-						<SUI.Header as="h3">Log: </SUI.Header>
 						{this.state.gameState.inCheck &&
 							<SUI.Header as="h3">Checked!</SUI.Header>
 						}
-						{this.state.log.map((l, i) =>
-							<SUI.Header as="h4" key={i}>{l}</SUI.Header>
-						)}
 					</SUI.Grid.Column>
 				</SUI.Grid>
 			</SUI.Container>

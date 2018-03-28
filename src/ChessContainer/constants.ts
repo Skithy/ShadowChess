@@ -1,3 +1,10 @@
+export enum GameStatus {
+	Game = 'Game',
+	Paused = 'Paused',
+	AwaitP1 = 'AwaitP1',
+	AwaitP2 = 'AwaitP2',
+}
+
 export enum ChessPiece {
 	Empty = '',
 	Pawn = 'Pawn',
@@ -10,8 +17,8 @@ export enum ChessPiece {
 
 export enum Team {
 	None = '',
-	A = 'A',
-	B = 'B',
+	A = 'Player 1',
+	B = 'Player 2',
 }
 
 export enum Colour {
