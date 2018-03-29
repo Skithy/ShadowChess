@@ -2,8 +2,9 @@ import * as React from 'react'
 import * as SUI from 'semantic-ui-react'
 import ChessGrid from './components/ChessGrid'
 import AwaitPlayerScreen from './components/AwaitPlayerScreen'
+import PausedScreen from './components/PausedScreen'
 import { getFOWBoardState, updateFOW, updateBoardState, checkChecked } from './gameState'
-import { Team, Colour, GameStatus } from './constants'
+import { Team, Colour, GameStatus, ChessPiece } from './constants'
 import { IGameState, ITileState, Coord, ITeamInfo, } from './interfaces'
 import { findAvailableMoves } from './chessMoves'
 
@@ -107,9 +108,13 @@ export default class ChessContainer extends React.PureComponent<IChessContainerP
 			return
 		}
 
+		let gameOver = false
 		let ghostTile: ITileState | undefined = undefined
 		// Capture a piece
 		if (tile.team && tile.team !== playerTurn) {
+			if (tile.chessPiece === ChessPiece.King) {
+				gameOver = true
+			}
 			ghostTile = {...tile}
 		}
 		
@@ -119,7 +124,9 @@ export default class ChessContainer extends React.PureComponent<IChessContainerP
 			inCheck: false,
 			ghostTile
 		}
-		const gameStatus = gameState.playerTurn === Team.A ? GameStatus.AwaitP1 : GameStatus.AwaitP2
+		const gameStatus = gameOver
+			? GameStatus.Paused
+			: gameState.playerTurn === Team.A ? GameStatus.AwaitP1 : GameStatus.AwaitP2
 		this.setState({gameState, gameStatus })
 	}
 
@@ -144,6 +151,8 @@ export default class ChessContainer extends React.PureComponent<IChessContainerP
 				return <AwaitPlayerScreen onResume={this.resumeGame} player={Team.A}/>
 			case GameStatus.AwaitP2:
 				return <AwaitPlayerScreen onResume={this.resumeGame} player={Team.B} />
+			case GameStatus.Paused:
+				return <PausedScreen />
 			default:
 				return null
 		}
@@ -155,12 +164,14 @@ export default class ChessContainer extends React.PureComponent<IChessContainerP
 		return (
 			<SUI.Container style={{marginTop: '2em'}}>
 				<SUI.Grid columns={2} divided doubling container>
+
 					<SUI.Grid.Column width={12}>
 						<SUI.Header as="h1" style={{ textAlign: 'center' }}>Shadow Chess</SUI.Header>
 						<div style={{ width: 600, margin: 'auto' }}>
 							{this.displayScreen()}
 						</div>
 					</SUI.Grid.Column>
+
 					<SUI.Grid.Column width={4}>
 						<SUI.Button onClick={this.toggleFogOfWar}>Toggle Fog of War</SUI.Button>
 						<SUI.Header as="h3">Turn: {this.state.gameState.playerTurn}</SUI.Header>
@@ -168,6 +179,7 @@ export default class ChessContainer extends React.PureComponent<IChessContainerP
 							<SUI.Header as="h3">Checked!</SUI.Header>
 						}
 					</SUI.Grid.Column>
+
 				</SUI.Grid>
 			</SUI.Container>
 		)
