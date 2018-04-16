@@ -34,6 +34,8 @@ const getTileColour = (props: IChessTileProps): string => {
 	return `background-color: ${backgroundColour};`
 }
 
+// Occupies 1/8 of available width
+// :before makes it square
 const ChessTile = styled.div`
 	${getTileColour}
 	${getTileHover}
@@ -41,9 +43,9 @@ const ChessTile = styled.div`
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	:after {
+	:before {
 		content: '';
-		display: block;
+		display: table;
 		padding-top: 100%;
 	}
 `

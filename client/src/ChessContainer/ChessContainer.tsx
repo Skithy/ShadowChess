@@ -167,7 +167,7 @@ export default class ChessContainer extends React.PureComponent<IChessContainerP
 
 					<SUI.Grid.Column width={12}>
 						<SUI.Header as="h1" style={{ textAlign: 'center' }}>Shadow Chess</SUI.Header>
-						<div style={{ width: 600, margin: 'auto' }}>
+						<div style={{ width: 600, height: 600, margin: 'auto' }}>
 							{this.displayScreen()}
 						</div>
 					</SUI.Grid.Column>
