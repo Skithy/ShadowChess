@@ -1,51 +1,54 @@
 import * as express from 'express'
 import * as http from 'http'
-import * as WebSocket from 'ws'
+import * as uuidv4 from 'uuid/v4'
+import { Server } from 'ws'
+
+import { IClient, id } from './interfaces'
 
 const app = express()
 const server = http.createServer(app)
-const wss = new WebSocket.Server({ server })
+const wss = new Server({ server })
 
-interface IWebSocket extends WebSocket {
-	isAlive?: boolean
-}
+const clients: Map<string, IClient> = new Map()
+const queue: IClient[] = []
+const matches: string[] = []
 
-wss.on('connection', (ws: IWebSocket, req: http.IncomingMessage) => {
+wss.on('connection', (ws: IClient, req: http.IncomingMessage) => {
 	ws.isAlive = true
+	ws.id = uuidv4()
+	clients.set(ws.id, ws)
+	console.log(`New connection - ${ws.id}`)
+
+	ws.on('close', () => {
+		console.log(`Closed connection - ${ws.id}`)
+		clients.delete(ws.id)
+	})
 
 	ws.on('pong', () => {
 		ws.isAlive = true
 	})
 
 	ws.on('message', (message: string) => {
-		console.log('received: %s', message)
-		const broadcastRegex = /^broadcast\:/
-		if (broadcastRegex.test(message)) {
-			message = message.replace(broadcastRegex, '')
-			wss.clients.forEach((client: IWebSocket) => {
-				if (client !== ws) {
-					client.send(`Hello, broadcast message -> ${message}`)
-				}
-			})
-		} else {
-			ws.send(`Hello, you sent -> ${message}`)
-		}
+		clients.forEach((client: IClient) => {
+			client.send(message)
+		})
 	})
-
-	console.log(req.connection.remoteAddress)
-	ws.send('Hi there, I am a WebSocket server')
 })
 
-setInterval(() => {
-	wss.clients.forEach((ws: IWebSocket) => {
+const pingClients = () => {
+	clients.forEach((ws: IClient) => {
 		if (!ws.isAlive) {
+			console.log(`Dead connection - ${ws.id}`)
+			clients.delete(ws.id)
 			return ws.terminate()
 		}
 		ws.isAlive = false
 		ws.ping()
 	})
-}, 5000)
+}
+
+setInterval(pingClients, 5000)
 
 server.listen(process.env.PORT || 8999, () => {
-	console.log(`Server started on port ${server.address().port} :)`)
+	console.log(`Server started on port ${server.address().port}`)
 })

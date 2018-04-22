@@ -1,0 +1,45 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`chessMoves pawn can go forward 1 move if not first move Player 1 1`] = `
+Array [
+  Array [
+    2,
+    4,
+  ],
+]
+`;
+
+exports[`chessMoves pawn can go forward 1 move if not first move Player 2 1`] = `
+Array [
+  Array [
+    2,
+    3,
+  ],
+]
+`;
+
+exports[`chessMoves pawn can go forward 2 moves if first move Player 1 1`] = `
+Array [
+  Array [
+    2,
+    5,
+  ],
+  Array [
+    2,
+    4,
+  ],
+]
+`;
+
+exports[`chessMoves pawn can go forward 2 moves if first move Player 2 1`] = `
+Array [
+  Array [
+    2,
+    2,
+  ],
+  Array [
+    2,
+    3,
+  ],
+]
+`;

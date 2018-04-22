@@ -4,7 +4,8 @@
         "module": "commonjs",
         "outDir": "./dist/server",
         "strict": true,
-        "sourceMap": true
+        "sourceMap": true,
+        "allowSyntheticDefaultImports": true
     },
     "exclude": [
         "dist",
